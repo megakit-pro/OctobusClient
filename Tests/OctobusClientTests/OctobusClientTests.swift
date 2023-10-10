@@ -1,12 +1,56 @@
 import XCTest
 @testable import OctobusClient
 
-final class OctobusClientTests: XCTestCase {
-    func testExample() throws {
-        // XCTest Documentation
-        // https://developer.apple.com/documentation/xctest
+class OctobusClientTests: XCTestCase {
+    var client: OctobusClient!
+    var mockDelegate: MockNetworkManagerDelegate!
 
-        // Defining Test Cases and Test Methods
-        // https://developer.apple.com/documentation/xctest/defining_test_cases_and_test_methods
+    override func setUp() {
+        super.setUp()
+        client = OctobusClient()
+        mockDelegate = MockNetworkManagerDelegate()
+        
+        client.delegate = mockDelegate
+    }
+
+    override func tearDown() {
+        client = nil
+        mockDelegate = nil
+        super.tearDown()
+    }
+
+    func testConnect() {
+        let token = ""
+        
+        client.connect(to: "ws://localhost:10188/octobus/v1/passenger/ws", with: token)
+
+        sleep(1)
+
+        XCTAssertTrue(mockDelegate.didSetConnected, "Connection wasn't established.")
+    }
+
+}
+
+// MARK: - MockNetworkManagerDelegate
+class MockNetworkManagerDelegate: OctobusClientDelegate {
+    deinit {
+        print("MockNetworkManagerDelegate deinitialized!")
+    }
+
+
+    var didSetConnected = false
+    var didSetError: Error?
+    var didHandleIncomingMessage: Data?
+
+    func setConnected(_ connected: Bool) {
+        didSetConnected = connected
+    }
+
+    func setError(_ error: Error) {
+        didSetError = error
+    }
+
+    func handleIcommingMessage(data: Data) {
+        didHandleIncomingMessage = data
     }
 }
