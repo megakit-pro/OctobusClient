@@ -10,5 +10,6 @@ import Foundation
 public protocol OctobusClientDelegate: AnyObject {
     func setConnected(_ connected:Bool)
     func setError(_ error: Error)
-    func handleIcommingMessage(data: Data)
+    func onOctobusMessage(serverMessage: ServerMessage<OctobusMessage>)
+    func onOctobusMessages(serverMessage: ServerMessage<[OctobusMessage]>)
 }

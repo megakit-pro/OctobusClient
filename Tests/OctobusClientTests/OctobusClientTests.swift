@@ -40,7 +40,8 @@ class MockNetworkManagerDelegate: OctobusClientDelegate {
 
     var didSetConnected = false
     var didSetError: Error?
-    var didHandleIncomingMessage: Data?
+    var didHandleIncomingMessage: ServerMessage<OctobusMessage>?
+    var didHandleIncomingMessages: ServerMessage<[OctobusMessage]>?
 
     func setConnected(_ connected: Bool) {
         didSetConnected = connected
@@ -50,7 +51,11 @@ class MockNetworkManagerDelegate: OctobusClientDelegate {
         didSetError = error
     }
 
-    func handleIcommingMessage(data: Data) {
-        didHandleIncomingMessage = data
+    func onOctobusMessage(serverMessage: ServerMessage<OctobusMessage>) {
+        didHandleIncomingMessage = serverMessage
+    }
+
+    func onOctobusMessages(serverMessage: ServerMessage<[OctobusMessage]>) {
+        didHandleIncomingMessages = serverMessages
     }
 }
