@@ -10,7 +10,8 @@ import Foundation
     // MARK: - MessagePayload
 public struct MessagePayload: Codable {
     public let driver: Driver?
-    public let status, validTill: String?
+    public let status: String
+    public let validTill: Int?
     
     enum CodingKeys: String, CodingKey {
         case driver, status
@@ -27,5 +28,5 @@ public struct Driver: Codable {
 
     // MARK: - LOC
 public struct LOC: Codable {
-    public let lat, lon: String?
+    public let lat, lon: Double?
 }
