@@ -44,7 +44,7 @@ public class OctobusClient: OctobusClientProtocol {
     }
 
     public func connect(to url: String?, with token: String?) {
-        guard let url = url,let token = token, let socketURL = URL(string: url ?? "NO_URL") else {
+        guard let url = url,let token = token, let socketURL = URL(string: url) else {
             log("Invalid URL")
             return
         }
@@ -153,14 +153,40 @@ public class OctobusClient: OctobusClientProtocol {
     }
 
     private func processReceivedData(_ data: Data) {
-        guard let message = try? JSONDecoder().decode(ServerMessage<OctobusMessage>.self, from: data) else {
-            if let arrayMessage = try? JSONDecoder().decode(ServerMessage<[OctobusMessage]>.self, from: data) {
+        do {
+            let message = try JSONDecoder().decode(ServerMessage<OctobusMessage>.self, from: data)
+            delegate?.onOctobusMessage(serverMessage: message)
+        } catch let error as DecodingError {
+            log("Error decoding single OctobusMessage: \(error.localizedDescription). Detailed error: \(detailedErrorDescription(error: error))")
+
+            do {
+                let arrayMessage = try JSONDecoder().decode(ServerMessage<[OctobusMessage]>.self, from: data)
                 delegate?.onOctobusMessages(serverMessage: arrayMessage)
+            } catch let arrayError as DecodingError {
+                log("Error decoding array of OctobusMessages: \(arrayError.localizedDescription). Detailed error: \(detailedErrorDescription(error: arrayError))")
+            } catch {
+                log("Unexpected error decoding array of OctobusMessages: \(error)")
             }
-            return
+        } catch {
+            log("Unexpected error decoding single OctobusMessage: \(error)")
         }
-        delegate?.onOctobusMessage(serverMessage: message)
     }
+
+    private func detailedErrorDescription(error: DecodingError) -> String {
+        switch error {
+        case .typeMismatch(_, let context):
+            return "Type mismatch for key: \(context.codingPath.description). Expected type \(context.debugDescription)."
+        case .valueNotFound(_, let context):
+            return "Value not found for key: \(context.codingPath.description). \(context.debugDescription)"
+        case .keyNotFound(_, let context):
+            return "Key not found: \(context.codingPath.description). \(context.debugDescription)"
+        case .dataCorrupted(let context):
+            return "Data corrupted at key: \(context.codingPath.description). \(context.debugDescription)"
+        @unknown default:
+            return "Unknown decoding error."
+        }
+    }
+
 
     private func handleReceivedText(_ string: String) {
         log("Received text: \(string)")
@@ -206,7 +232,21 @@ public class OctobusClient: OctobusClientProtocol {
         case .binary(let data):
             handleReceivedBinaryData(data)
         case .error(let error):
-            handleError(error)
+                if let upgradeError = error as? HTTPUpgradeError {
+                    switch upgradeError {
+                        case .notAnUpgrade(let statusCode, _):
+                            if statusCode == 401 {
+                                connectionTimeoutTask?.cancel()
+                                delegate?.authenticationFailed()
+                                return
+                            }
+                            
+                        default:
+                            handleError(error)
+                    }
+                } else {
+                    handleError(error)
+                }
         case .pong(_), .ping(_):
             break
         case .viabilityChanged(let viable):

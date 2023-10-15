@@ -12,4 +12,5 @@ public protocol OctobusClientDelegate: AnyObject {
     func setError(_ error: Error)
     func onOctobusMessage(serverMessage: ServerMessage<OctobusMessage>)
     func onOctobusMessages(serverMessage: ServerMessage<[OctobusMessage]>)
+    func authenticationFailed()
 }

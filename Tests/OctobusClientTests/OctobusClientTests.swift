@@ -56,6 +56,10 @@ class MockNetworkManagerDelegate: OctobusClientDelegate {
     }
 
     func onOctobusMessages(serverMessage: ServerMessage<[OctobusMessage]>) {
-        didHandleIncomingMessages = serverMessages
+        didHandleIncomingMessages = serverMessage
+    }
+
+    func authenticationFailed() {
+        didSetError = Error.self as? Error
     }
 }
