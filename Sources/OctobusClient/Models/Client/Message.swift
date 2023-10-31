@@ -11,13 +11,14 @@ import Foundation
 public enum MessageType: String, Codable {
     case text = "text_message"
     case image = "image_message"
-    case location = "location_message"
+    case locationMessage = "location_message"
     case getUpdates = "get_updates"
     case commitUpdates = "commit_updates"
     case joinRequest = "join_request"
     case leaveRequest = "leave_request"
     case typing = "typing"
     case readConfirm = "read_confirm"
+    case location = "location"
 }
 
     // MARK: - Message
@@ -55,8 +56,8 @@ struct Payload: Codable {
         case chatID = "chat_id"
         case text
         case imageUrl = "image_url"
-        case latitude
-        case longitude
+        case latitude = "lat"
+        case longitude = "lon"
         case limit
         case offset
         case latestUpdateId = "latest_update_id"

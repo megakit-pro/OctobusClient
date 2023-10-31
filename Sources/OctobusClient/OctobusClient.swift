@@ -2,21 +2,23 @@ import Foundation
 import Starscream
 
 public class OctobusClient: OctobusClientProtocol {
-    
+
     // MARK: - Properties
     public weak var delegate: OctobusClientDelegate?
 
     private var socket: WebSocket?
-    private let logPrefix = "[OctobusClient]"
+    private var logPrefix = "[OctobusClient]"
     private let connectionTimeout: TimeInterval = 3.0
     private let circuitOpenDuration: TimeInterval = 60.0
     private let budgetReplenishInterval: TimeInterval = 10.0
     private let maxConsecutiveFailures = 3
+    private var isDebug = false
 
     private struct ConnectionDetails {
         let url: String
         let token: String
     }
+
     private var connectionDetails: ConnectionDetails?
 
     private var connectionTimeoutTask: DispatchWorkItem?
@@ -30,13 +32,19 @@ public class OctobusClient: OctobusClientProtocol {
         case open(Date)
         case halfOpen
     }
+
     private var circuitState: CircuitState = .closed
 
     private let queue = DispatchQueue(label: "com.octobus.retryQueue")
     private let wsQueue = DispatchQueue(label: "com.octobus.wsQueue", qos: .userInitiated)
 
     // MARK: - Initializer
-    public init() { }
+    public init(debug: Bool = false) {
+        if debug {
+            logPrefix = "[OctobusClient DEBUG]"
+            isDebug = true
+        }
+    }
 
     // MARK: - Helper Functions
     private func log(_ message: String) {
@@ -44,7 +52,7 @@ public class OctobusClient: OctobusClientProtocol {
     }
 
     public func connect(to url: String?, with token: String?) {
-        guard let url = url,let token = token, let socketURL = URL(string: url) else {
+        guard let url = url, let token = token, let socketURL = URL(string: url) else {
             log("Invalid URL")
             return
         }
@@ -125,7 +133,9 @@ public class OctobusClient: OctobusClientProtocol {
         let delay = baseDelay * pow(2.0, Double(consecutiveFailures)) + jitter
 
         queue.asyncAfter(deadline: .now() + delay) { [weak self] in
-            guard let details = self?.connectionDetails else { return }
+            guard let details = self?.connectionDetails else {
+                return
+            }
             self?.log("Attempting to reconnect. Retry #\(self?.consecutiveFailures ?? 0)")
             self?.connect(to: details.url, with: details.token)
         }
@@ -137,7 +147,7 @@ public class OctobusClient: OctobusClientProtocol {
             circuitState = .open(Date())
         }
     }
-    
+
     private func connectionSucceeded(_ headers: [String: String]) {
         log("websocket is connected: \(headers)")
         delegate?.setConnected(true)
@@ -145,7 +155,7 @@ public class OctobusClient: OctobusClientProtocol {
         consecutiveFailures = 0
         circuitState = .closed
     }
-    
+
     private func connectionLost() {
         delegate?.setConnected(false)
         circuitState = .halfOpen
@@ -153,12 +163,9 @@ public class OctobusClient: OctobusClientProtocol {
     }
 
     private func processReceivedData(_ data: Data) {
-        do {
-            let message = try JSONDecoder().decode(ServerMessage<OctobusMessage>.self, from: data)
+        if let message = try? JSONDecoder().decode(ServerMessage<OctobusMessage>.self, from: data) {
             delegate?.onOctobusMessage(serverMessage: message)
-        } catch let error as DecodingError {
-            log("Error decoding single OctobusMessage: \(error.localizedDescription). Detailed error: \(detailedErrorDescription(error: error))")
-
+        } else {
             do {
                 let arrayMessage = try JSONDecoder().decode(ServerMessage<[OctobusMessage]>.self, from: data)
                 delegate?.onOctobusMessages(serverMessage: arrayMessage)
@@ -167,8 +174,6 @@ public class OctobusClient: OctobusClientProtocol {
             } catch {
                 log("Unexpected error decoding array of OctobusMessages: \(error)")
             }
-        } catch {
-            log("Unexpected error decoding single OctobusMessage: \(error)")
         }
     }
 
@@ -191,6 +196,15 @@ public class OctobusClient: OctobusClientProtocol {
     private func handleReceivedText(_ string: String) {
         log("Received text: \(string)")
         if let data = string.data(using: .utf8) {
+            if isDebug {
+                do {
+                    let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
+                    log("Text data: \(jsonObject)")
+                } catch {
+                    log("Failed to parse data: \(error)")
+                }
+            }
+
             processReceivedData(data)
         }
     }
@@ -198,12 +212,21 @@ public class OctobusClient: OctobusClientProtocol {
     private func handleReceivedBinaryData(_ data: Data) {
         log("Received binary data: \(data.count) bytes")
         if let decompressedData = data.gzipDecompress() {
+            log("Decompressed data: \(decompressedData.count) bytes")
+            if isDebug {
+                do {
+                    let jsonObject = try JSONSerialization.jsonObject(with: decompressedData, options: [])
+                    log("Decompressed data: \(jsonObject)")
+                } catch {
+                    log("Failed to parse data: \(error)")
+                }
+            }
             processReceivedData(decompressedData)
         } else {
             log("Failed to decompress gzip data")
         }
     }
-    
+
     private func handleError(_ error: Error?) {
         log("Error: \(error?.localizedDescription ?? "Unknown error")")
         if let error = error {
@@ -211,7 +234,7 @@ public class OctobusClient: OctobusClientProtocol {
             delegate?.setConnected(false)
         }
     }
-    
+
     private func handleNetworkViability(_ viable: Bool) {
         delegate?.setConnected(viable)
         log(viable ? "network is viable" : "network is not viable")
@@ -232,21 +255,21 @@ public class OctobusClient: OctobusClientProtocol {
         case .binary(let data):
             handleReceivedBinaryData(data)
         case .error(let error):
-                if let upgradeError = error as? HTTPUpgradeError {
-                    switch upgradeError {
-                        case .notAnUpgrade(let statusCode, _):
-                            if statusCode == 401 {
-                                connectionTimeoutTask?.cancel()
-                                delegate?.authenticationFailed()
-                                return
-                            }
-                            
-                        default:
-                            handleError(error)
+            if let upgradeError = error as? HTTPUpgradeError {
+                switch upgradeError {
+                case .notAnUpgrade(let statusCode, _):
+                    if statusCode == 401 {
+                        connectionTimeoutTask?.cancel()
+                        delegate?.authenticationFailed()
+                        return
                     }
-                } else {
+
+                default:
                     handleError(error)
                 }
+            } else {
+                handleError(error)
+            }
         case .pong(_), .ping(_):
             break
         case .viabilityChanged(let viable):
