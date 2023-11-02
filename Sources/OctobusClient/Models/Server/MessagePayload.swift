@@ -24,6 +24,8 @@ public struct Driver: Codable {
     public let avatar: String?
     public let loc: LOC?
     public let name: String?
+    public let id: String?
+    public let rating: Double?
 }
 
     // MARK: - LOC
