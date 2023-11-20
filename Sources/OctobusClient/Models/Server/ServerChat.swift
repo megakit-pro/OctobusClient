@@ -13,7 +13,7 @@ import Foundation
 public struct ServerChat: Codable {
     public let id: Int
     public let requestUUID: String
-    public let isSealed: Bool
+    public let isSealed: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id
