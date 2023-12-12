@@ -1,44 +1,66 @@
 import Foundation
 import Starscream
 
+/// OctobusClient class implementing the OctobusClientProtocol
 public class OctobusClient: OctobusClientProtocol {
 
     // MARK: - Properties
+
+    /// Delegate to handle events
     public weak var delegate: OctobusClientDelegate?
 
+    /// WebSocket instance for communication
     private var socket: WebSocket?
+    /// Prefix for log messages
     private var logPrefix = "[OctobusClient]"
+    /// Timeout for connection attempts
     private let connectionTimeout: TimeInterval = 3.0
+    /// Duration for which the circuit remains open
     private let circuitOpenDuration: TimeInterval = 60.0
+    /// Interval for replenishing the retry budget
     private let budgetReplenishInterval: TimeInterval = 10.0
+    /// Maximum number of consecutive failures before opening the circuit
     private let maxConsecutiveFailures = 3
+    /// Debug flag
     private var isDebug = false
 
+    /// Struct to hold connection details
     private struct ConnectionDetails {
         let url: String
         let token: String
     }
 
+    /// Connection details instance
     private var connectionDetails: ConnectionDetails?
 
+    /// Task for connection timeout
     private var connectionTimeoutTask: DispatchWorkItem?
+    /// Retry budget for connection attempts
     private var retryBudget = 100
+    /// Cost of a retry attempt
     private let budgetCost = 2
+    /// Rate of replenishing the retry budget
     private let budgetReplenishRate = 1
+    /// Number of consecutive failures
     private var consecutiveFailures = 0
 
+    /// Enum to represent the state of the circuit
     private enum CircuitState {
         case closed
         case open(Date)
         case halfOpen
     }
 
+    /// Current state of the circuit
     private var circuitState: CircuitState = .closed
 
+    /// Queues for retry and WebSocket operations
     private let queue = DispatchQueue(label: "com.octobus.retryQueue")
     private let wsQueue = DispatchQueue(label: "com.octobus.wsQueue", qos: .userInitiated)
 
     // MARK: - Initializer
+
+    /// Initializer with optional debug flag
     public init(debug: Bool = false) {
         if debug {
             logPrefix = "[OctobusClient DEBUG]"
@@ -47,10 +69,13 @@ public class OctobusClient: OctobusClientProtocol {
     }
 
     // MARK: - Helper Functions
+
+    /// Function to log messages with the log prefix
     private func log(_ message: String) {
         print("\(logPrefix) \(message)")
     }
 
+    /// Function to connect to the server
     public func connect(to url: String?, with token: String?) {
         guard let url = url, let token = token, let socketURL = URL(string: url) else {
             log("Invalid URL")
@@ -65,6 +90,7 @@ public class OctobusClient: OctobusClientProtocol {
         socket?.connect()
     }
 
+    /// Function to schedule a connection timeout task
     private func scheduleConnectionTimeoutTask() {
         connectionTimeoutTask?.cancel()
 
@@ -76,6 +102,7 @@ public class OctobusClient: OctobusClientProtocol {
         connectionTimeoutTask = task
     }
 
+    /// Function to set up the WebSocket with the given URL and token
     private func setUpSocket(with url: URL, token: String) {
         var request = URLRequest(url: url)
         request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -86,11 +113,13 @@ public class OctobusClient: OctobusClientProtocol {
         socket?.callbackQueue = wsQueue
     }
 
+    /// Function to disconnect from the server
     public func disconnect() {
         socket?.disconnect()
         consecutiveFailures = 0
     }
 
+    /// Function to send a message to the server
     public func send(message: Message) {
         if let messageData = message.jsonString().data(using: .utf8),
            let compressedData = messageData.gzipCompress() {
@@ -98,6 +127,7 @@ public class OctobusClient: OctobusClientProtocol {
         }
     }
 
+    /// Function to check if a connection retry can be attempted
     private func canRetryConnection() -> Bool {
         switch circuitState {
         case .closed:
@@ -113,6 +143,7 @@ public class OctobusClient: OctobusClientProtocol {
         }
     }
 
+    /// Function to adjust the retry budget
     private func adjustRetryBudget() {
         retryBudget = max(0, retryBudget - budgetCost)
 
@@ -121,6 +152,7 @@ public class OctobusClient: OctobusClientProtocol {
         }
     }
 
+    /// Function to attempt reconnection
     private func attemptReconnection() {
         guard canRetryConnection() else {
             log("Cannot retry due to exhausted retry budget or open circuit.")
@@ -148,6 +180,7 @@ public class OctobusClient: OctobusClientProtocol {
         }
     }
 
+    /// Function to handle successful connection
     private func connectionSucceeded(_ headers: [String: String]) {
         log("websocket is connected: \(headers)")
         delegate?.setConnected(true)
@@ -156,12 +189,14 @@ public class OctobusClient: OctobusClientProtocol {
         circuitState = .closed
     }
 
+    /// Function to handle connection loss
     private func connectionLost() {
         delegate?.setConnected(false)
         circuitState = .halfOpen
         attemptReconnection()
     }
 
+    /// Function to process received data
     private func processReceivedData(_ data: Data) {
         if let message = try? JSONDecoder().decode(ServerMessage<OctobusMessage>.self, from: data) {
             delegate?.onOctobusMessage(serverMessage: message)
@@ -245,11 +280,8 @@ public class OctobusClient: OctobusClientProtocol {
         switch event {
         case .connected(let headers):
             connectionSucceeded(headers)
-        case .disconnected(_, _), .peerClosed, .reconnectSuggested(_):
+        case .disconnected(_, _), .peerClosed, .reconnectSuggested(_), .cancelled:
             connectionLost()
-        case .cancelled:
-            delegate?.setConnected(false)
-            log("websocket is cancelled")
         case .text(let string):
             handleReceivedText(string)
         case .binary(let data):

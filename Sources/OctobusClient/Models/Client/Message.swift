@@ -1,44 +1,49 @@
-    //
-    //  Message.swift
-    //  chatter
-    //
-    //  Created by Anton Stremovskyy on 20.03.2023.
-    //
-
 import Foundation
 
-    // MARK: - MessageType
+// MARK: - MessageType
+
+/// Represents the type of a message in a communication system.
 public enum MessageType: String, Codable {
-    case text = "text_message"
-    case image = "image_message"
-    case locationMessage = "location_message"
-    case getUpdates = "get_updates"
-    case commitUpdates = "commit_updates"
-    case joinRequest = "join_request"
-    case leaveRequest = "leave_request"
-    case typing = "typing"
-    case readConfirm = "read_confirm"
-    case location = "location"
+    case text = "text_message" // Represents a text message.
+    case image = "image_message" // Represents an image message.
+    case locationMessage = "location_message" // Represents a location message.
+    case getUpdates = "get_updates" // Represents a request to get updates.
+    case commitUpdates = "commit_updates" // Represents a request to commit updates.
+    case joinRequest = "join_request" // Represents a join request.
+    case leaveRequest = "leave_request" // Represents a leave request.
+    case typing = "typing" // Represents a typing status update.
+    case readConfirm = "read_confirm" // Represents a read confirmation.
+    case location = "location" // Represents a location update.
 }
 
-    // MARK: - Message
+// MARK: - Message
+
+/// Represents a message with a specific type and payload.
 public class Message: Codable, Identifiable {
-    public let id: UUID = UUID()
-    let messageType: MessageType
-    let payload: Payload
-    
+    public let id: UUID // The unique identifier of the message.
+    let messageType: MessageType // The type of the message.
+    let payload: Payload // The payload of the message.
+
     enum CodingKeys: String, CodingKey {
-        case messageType = "message_type"
-        case payload
+        case messageType = "message_type" // The coding key for the message type.
+        case payload // The coding key for the payload.
+        case id // The coding key for the id.
     }
-    
+
+    /// Initializes a new message with the given type and payload.
+    /// - Parameters:
+    ///   - messageType: The type of the message.
+    ///   - payload: The payload of the message.
     init(messageType: MessageType, payload: Payload) {
+        self.id = UUID()
         self.messageType = messageType
         self.payload = payload
     }
 }
 
-    // MARK: - Payload
+// MARK: - Payload
+
+/// Represents the payload of a message, containing various optional fields.
 struct Payload: Codable {
     let chatID: Int?
     let text: String?
@@ -91,7 +96,11 @@ struct Payload: Codable {
     }
 }
 
+// MARK: - Message Extension
+
 extension Message {
+    /// Converts the message object to a JSON string.
+    /// - Returns: A JSON string representation of the message or an empty string if encoding fails.
     func jsonString() -> String {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
