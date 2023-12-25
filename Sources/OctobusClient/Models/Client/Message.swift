@@ -14,6 +14,10 @@ public enum MessageType: String, Codable {
     case typing = "typing" // Represents a typing status update.
     case readConfirm = "read_confirm" // Represents a read confirmation.
     case location = "location" // Represents a location update.
+    case getChatUpdates = "get_chat_updates" // Represents a request to get chat updates.
+    case reportToMessage = "report_to_message" // Represents a report to message.
+    case commandMessage = "command" // Represents a command message.
+    case userAction = "user_action" // Represents a user action.
 }
 
 // MARK: - Message
@@ -35,7 +39,7 @@ public class Message: Codable, Identifiable {
     ///   - messageType: The type of the message.
     ///   - payload: The payload of the message.
     init(messageType: MessageType, payload: Payload) {
-        self.id = UUID()
+        id = UUID()
         self.messageType = messageType
         self.payload = payload
     }
@@ -56,7 +60,13 @@ struct Payload: Codable {
     let isTyping: Bool?
     let messageId: Int?
     let requestUuid: String?
-    
+    let chatUUID: String?
+    let userID: Int?
+    let reportType: ReportType?
+    let command: String?
+    let params: String?
+    let action: UserActionType?
+
     enum CodingKeys: String, CodingKey {
         case chatID = "chat_id"
         case text
@@ -69,8 +79,14 @@ struct Payload: Codable {
         case isTyping = "is_typing"
         case messageId = "message_id"
         case requestUuid = "request_uuid"
+        case chatUUID = "chat_uuid"
+        case reportType = "report_type"
+        case command
+        case params
+        case action
+        case userID = "user_id"
     }
-    
+
     init(chatID: Int? = nil,
          text: String? = nil,
          imageUrl: String? = nil,
@@ -81,7 +97,13 @@ struct Payload: Codable {
          latestUpdateId: Int? = nil,
          isTyping: Bool? = nil,
          messageId: Int? = nil,
-         requestUuid: String? = nil) {
+         requestUuid: String? = nil,
+         chatUUID: String? = nil,
+         reportType: ReportType? = nil,
+         command: String? = nil,
+         params: String? = nil,
+         action: UserActionType? = nil,
+         userID: Int? = nil) {
         self.chatID = chatID
         self.text = text
         self.imageUrl = imageUrl
@@ -93,6 +115,12 @@ struct Payload: Codable {
         self.isTyping = isTyping
         self.messageId = messageId
         self.requestUuid = requestUuid
+        self.chatUUID = chatUUID
+        self.reportType = reportType
+        self.command = command
+        self.params = params
+        self.action = action
+        self.userID = userID
     }
 }
 
