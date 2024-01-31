@@ -135,6 +135,7 @@ extension Message {
         guard let jsonData = try? encoder.encode(self), let jsonString = String(data: jsonData, encoding: .utf8) else {
             return ""
         }
+
         return jsonString
     }
 }

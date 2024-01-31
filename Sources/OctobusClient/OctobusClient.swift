@@ -271,41 +271,40 @@ public class OctobusClient: OctobusClientProtocol {
     }
 
     private func handleNetworkViability(_ viable: Bool) {
-        delegate?.setConnected(viable)
         log(viable ? "network is viable" : "network is not viable")
     }
 
     // MARK: - Handle Connection Events
     private func handleConnectionEvents(_ event: WebSocketEvent) {
         switch event {
-        case .connected(let headers):
-            connectionSucceeded(headers)
-        case .disconnected(_, _), .peerClosed, .reconnectSuggested(_), .cancelled:
-            connectionLost()
-        case .text(let string):
-            handleReceivedText(string)
-        case .binary(let data):
-            handleReceivedBinaryData(data)
-        case .error(let error):
-            if let upgradeError = error as? HTTPUpgradeError {
-                switch upgradeError {
-                case .notAnUpgrade(let statusCode, _):
-                    if statusCode == 401 {
-                        connectionTimeoutTask?.cancel()
-                        delegate?.authenticationFailed()
-                        return
+            case .connected(let headers):
+                connectionSucceeded(headers)
+            case .disconnected(_, _), .reconnectSuggested(_), .cancelled:
+                connectionLost()
+            case .text(let string):
+                handleReceivedText(string)
+            case .binary(let data):
+                handleReceivedBinaryData(data)
+            case .error(let error):
+                if let upgradeError = error as? HTTPUpgradeError {
+                    switch upgradeError {
+                        case .notAnUpgrade(let statusCode, _):
+                            if statusCode == 401 {
+                                connectionTimeoutTask?.cancel()
+                                delegate?.authenticationFailed()
+                                return
+                            }
+                            
+                        default:
+                            handleError(error)
                     }
-
-                default:
+                } else {
                     handleError(error)
                 }
-            } else {
-                handleError(error)
-            }
-        case .pong(_), .ping(_):
-            break
-        case .viabilityChanged(let viable):
-            handleNetworkViability(viable)
+            case .pong(_), .ping(_), .peerClosed:
+                break
+            case .viabilityChanged(let viable):
+                handleNetworkViability(viable)
         }
     }
 }
