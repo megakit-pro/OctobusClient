@@ -18,6 +18,7 @@ public enum MessageType: String, Codable {
     case reportToMessage = "report_to_message" // Represents a report to message.
     case commandMessage = "command" // Represents a command message.
     case userAction = "user_action" // Represents a user action.
+    case getRequestDetails = "get_request_details" // Represents actions thats return request details
 }
 
 // MARK: - Message

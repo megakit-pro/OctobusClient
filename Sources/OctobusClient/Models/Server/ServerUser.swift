@@ -40,4 +40,5 @@ public enum UserType: String, Codable {
     case dispatcher = "dispatcher"
     case system = "system"
     case unknown = "unknown"
+    case watcher = "watcher"
 }
