@@ -7,14 +7,17 @@
 
 import Foundation
 
-
-
-// MARK: - Chat
+/// `ServerChat` is a structure that represents a server chat.
+/// It conforms to the `Codable` protocol for easy encoding and decoding.
 public struct ServerChat: Codable {
+    /// An `Int` representing the ID of the chat.
     public let id: Int
+    /// A `String` representing the request UUID of the chat.
     public let requestUUID: String
-    public let isSealed: Bool
+    /// An optional `Bool` indicating whether the chat is sealed.
+    public let isSealed: Bool?
 
+    /// An enumeration that represents the coding keys for the `ServerChat` structure.
     enum CodingKeys: String, CodingKey {
         case id
         case requestUUID = "request_uuid"

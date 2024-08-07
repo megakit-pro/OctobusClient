@@ -10,17 +10,9 @@ import Gzip
 
 extension Data {
     func gzipDecompress() -> Data? {
-        let decompressedData: Data?
-        
-        if self.isGzipped {
-            decompressedData = try? self.gunzipped()
-        } else {
-            decompressedData = self
-        }
-        
-        return decompressedData
+        isGzipped ? try? gunzipped() : self
     }
-    
+
     func gzipCompress() -> Data? {
         try? self.gzipped(level: .bestCompression)
     }
