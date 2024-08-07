@@ -1,12 +1,5 @@
 //
-//  File.swift
-//  
-//
-//  Created by Anton Stremovskyy on 10.10.2023.
-//
-
-//
-//  File.swift
+//  OctobusClientProtocol.swift
 //
 //
 //  Created by Anton Stremovskyy on 10.10.2023.

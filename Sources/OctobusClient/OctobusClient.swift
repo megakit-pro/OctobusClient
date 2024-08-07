@@ -199,16 +199,17 @@ public class OctobusClient: OctobusClientProtocol {
     /// Function to process received data
     private func processReceivedData(_ data: Data) {
         if let message = try? JSONDecoder().decode(ServerMessage<OctobusMessage>.self, from: data) {
+            /// Returns a single `OctobusMessage` to a delegate
             delegate?.onOctobusMessage(serverMessage: message)
+        } else if let arrayMessage = try? JSONDecoder().decode(ServerMessage<[OctobusMessage]>.self, from: data) {
+            /// Returns an array of `OctobusMessage` to a delegate
+            delegate?.onOctobusMessages(serverMessage: arrayMessage)
         } else {
-            do {
-                let arrayMessage = try JSONDecoder().decode(ServerMessage<[OctobusMessage]>.self, from: data)
-                delegate?.onOctobusMessages(serverMessage: arrayMessage)
-            } catch let arrayError as DecodingError {
-                log("Error decoding array of OctobusMessages: \(arrayError.localizedDescription). Detailed error: \(detailedErrorDescription(error: arrayError))")
-            } catch {
-                log("Unexpected error decoding array of OctobusMessages: \(error)")
-            }
+            /// Data is not representable in any handled type
+            ///
+            /// Returns plain `Data` to a delegate
+            delegate?.onOctobusData(data)
+            log("Data can't be represented in any handled type")
         }
     }
 

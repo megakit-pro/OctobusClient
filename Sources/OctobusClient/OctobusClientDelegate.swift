@@ -1,6 +1,6 @@
 //
-//  File.swift
-//  
+//  OctobusClientDelegate.swift
+//
 //
 //  Created by Anton Stremovskyy on 10.10.2023.
 //
@@ -28,6 +28,11 @@ public protocol OctobusClientDelegate: AnyObject {
     ///
     /// - Parameter serverMessage: The server message containing the array of Octobus messages.
     func onOctobusMessages(serverMessage: ServerMessage<[OctobusMessage]>)
+    
+    /// Notifies the delegate that unhandled data has been received.
+    ///
+    /// - Parameter data: Data from server that couldn't be represented in any handled type.
+    func onOctobusData(_ data: Data)
 
     /// Notifies the delegate that authentication has failed.
     func authenticationFailed()
