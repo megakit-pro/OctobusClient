@@ -9,8 +9,8 @@ import Foundation
 
 public typealias ObserveChatMessage = Message
 
-public func createObserveChatMessage(chatID: Int) -> ObserveChatMessage {
-    let payload = Payload(chatID: chatID)
+public func createObserveChatMessage(chatUUID: String) -> ObserveChatMessage {
+    let payload = Payload(chatUUID: chatUUID)
 
     return ObserveChatMessage(messageType: .startObservingChat, payload: payload)
 }
