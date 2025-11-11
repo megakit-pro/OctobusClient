@@ -58,7 +58,8 @@ public struct LOC: Codable {
     public let lon: Double?
 }
 
-/// `Vehicle` is a structure that represents a vehicle
+/// `Vehicle` is a structure that represents a vehicle.
+/// It conforms to the `Codable` protocol for easy encoding and decoding.
 public struct Vehicle: Codable {
     /// An optional `String` representing the brand of the vehicle.
     public let brand: String?
