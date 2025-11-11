@@ -16,11 +16,21 @@ public struct MessagePayload: Codable {
     public let status: String
     /// An optional `Int` representing the validity period of the message.
     public let validTill: Int?
+    /// An optional `String` representing id associated with the message.
+    public let id: String?
+    /// An optional `Int` representing added value for fare offer.
+    public let addedValue: Int?
+    /// An optional `String` representing fare offer status.
+    public let fareOfferStatus: String?
+    /// An optional `Vehicle` representing vehicle associated with the message.
+    public let vehicle: Vehicle?
 
     /// An enumeration that represents the coding keys for the `MessagePayload` structure.
     enum CodingKeys: String, CodingKey {
-        case driver, status
+        case driver, status, id, vehicle
         case validTill = "valid_till"
+        case addedValue = "added_value"
+        case fareOfferStatus = "fare_offer_status"
     }
 }
 
@@ -46,4 +56,13 @@ public struct LOC: Codable {
     public let lat: Double?
     /// An optional `Double` representing the longitude of the location.
     public let lon: Double?
+}
+
+/// `Vehicle` is a structure that represents a vehicle.
+/// It conforms to the `Codable` protocol for easy encoding and decoding.
+public struct Vehicle: Codable {
+    /// An optional `String` representing the brand of the vehicle.
+    public let brand: String?
+    /// An optional `String` representing the model of the vehicle.
+    public let model: String?
 }
