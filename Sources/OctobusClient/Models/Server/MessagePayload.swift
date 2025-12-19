@@ -14,6 +14,8 @@ public struct MessagePayload: Codable {
     public let driver: Driver?
     /// A `String` representing the status of the message.
     public let status: String
+    /// An optional `Int` representing time when message created (unix time).
+    public let createdAt: Int?
     /// An optional `Int` representing the validity period of the message.
     public let validTill: Int?
     /// An optional `String` representing id associated with the message.
@@ -28,6 +30,7 @@ public struct MessagePayload: Codable {
     /// An enumeration that represents the coding keys for the `MessagePayload` structure.
     enum CodingKeys: String, CodingKey {
         case driver, status, id, vehicle
+        case createdAt = "created_at"
         case validTill = "valid_till"
         case addedValue = "added_value"
         case fareOfferStatus = "fare_offer_status"
